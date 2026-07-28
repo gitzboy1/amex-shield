@@ -2,16 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import api from '@/lib/api';
 
 export default function AIAdvisor() {
   const [product, setProduct] = useState("");
   const [card, setCard] = useState("");
   const [showResult, setShowResult] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
 
-  const handleAsk = (e: React.FormEvent) => {
+  const handleAsk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (product && card) {
-      setShowResult(true);
+      setLoading(true);
+      try {
+        const res = await api.post('/api/advisor/', { product, card });
+        setResult(res.data);
+        setShowResult(true);
+      } catch (err) {
+        console.error("Failed to fetch recommendation", err);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -54,31 +66,35 @@ export default function AIAdvisor() {
 
           <button 
             type="submit"
-            className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg shadow hover:bg-blue-700 transition"
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg shadow hover:bg-blue-700 transition disabled:bg-blue-400"
           >
-            Get Recommendation
+            {loading ? "Analyzing..." : "Get Recommendation"}
           </button>
         </form>
 
-        {showResult && (
+        {showResult && result && (
           <div className="mt-8 pt-8 border-t border-gray-100 animate-in slide-in-from-bottom-4 duration-500">
             <h3 className="text-lg font-bold text-gray-900 mb-4">AI Recommendation:</h3>
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <span className="text-2xl">💳</span>
-                <span className="text-xl font-bold text-blue-900">Use {card}</span>
+                <span className="text-xl font-bold text-blue-900">Use {result.card}</span>
               </div>
               
               <p className="text-blue-800 mb-4">
-                Excellent choice! When you purchase <strong>{product}</strong> with your {card}, you maximize your coverage.
+                {result.message}
               </p>
 
               <h4 className="font-semibold text-blue-900 mb-2">You'll receive:</h4>
               <ul className="space-y-2 text-blue-800">
-                <li className="flex items-center"><span className="mr-2 text-green-500">✓</span> Extended Warranty (Up to 1 extra year)</li>
-                <li className="flex items-center"><span className="mr-2 text-green-500">✓</span> Purchase Protection (90 days against damage/theft)</li>
-                <li className="flex items-center"><span className="mr-2 text-green-500">✓</span> Return Protection (90 days guaranteed return)</li>
+                {result.benefits.map((benefit: any, idx: number) => (
+                  <li key={idx} className="flex items-center">
+                    <span className="mr-2 text-green-500">✓</span> 
+                    <strong>{benefit.name}</strong> &nbsp;({benefit.desc})
+                  </li>
+                ))}
               </ul>
             </div>
             
