@@ -39,6 +39,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: amex_shield_frontend
+    command: npm run dev
     ports:
       - "3000:3000"
     volumes:
